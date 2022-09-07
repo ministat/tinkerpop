@@ -49,7 +49,11 @@ import java.util.Set;
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class DefaultTraversal<S, E> implements Traversal.Admin<S, E> {
-
+    // make the exception handling more efficient
+    private static NoSuchElementException noSuchElementExceptionWithoutStacktrace = new NoSuchElementException();
+    static {
+        noSuchElementExceptionWithoutStacktrace.setStackTrace(new StackTraceElement[0]);
+    }
     private Traverser.Admin<E> lastTraverser = EmptyTraverser.instance();
     private Step<?, E> finalEndStep = EmptyStep.instance();
     private final StepPosition stepPosition = new StepPosition();
@@ -210,7 +214,7 @@ public class DefaultTraversal<S, E> implements Traversal.Admin<S, E> {
             // and release the resources.
             CloseableIterator.closeIterator(this);
 
-            throw this.parent instanceof EmptyStep ? new NoSuchElementException() : e;
+            throw this.parent instanceof EmptyStep ? noSuchElementExceptionWithoutStacktrace : e;
         }
     }
 

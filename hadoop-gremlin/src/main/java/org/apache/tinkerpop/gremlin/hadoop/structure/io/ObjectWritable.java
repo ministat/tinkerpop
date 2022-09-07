@@ -69,7 +69,12 @@ public final class ObjectWritable<T> implements WritableComparable<ObjectWritabl
         final int maxAttempts = 5;
         for (int i = maxAttempts; ;) {
             try {
-                return Objects.toString(this.t);
+                // never call HashMap's toString()
+                if (t != null && !t.getClass().getName().contains("Map")) {
+                    return Objects.toString(this.t);
+                } else {
+                    return "null";
+                }
             }
             catch (ConcurrentModificationException cme) {
                 if (--i > 0) {

@@ -33,6 +33,10 @@ import java.util.NoSuchElementException;
  * release the underlying resources.
  */
 public class TinkerGraphIterator<E> implements CloseableIterator<E> {
+    private static NoSuchElementException noSuchElementExceptionWithoutStacktrace = new NoSuchElementException();
+    static {
+        noSuchElementExceptionWithoutStacktrace.setStackTrace(new StackTraceElement[0]);
+    }
     /**
      * Original iterator which is wrapped by this class
      */
@@ -60,7 +64,7 @@ public class TinkerGraphIterator<E> implements CloseableIterator<E> {
     @Override
     public E next() {
         if (!hasNext()) {
-            throw new NoSuchElementException();
+            throw noSuchElementExceptionWithoutStacktrace;
         }
 
         final E ret = next;

@@ -52,6 +52,9 @@ public final class SparkMemory implements Memory.Admin, Serializable {
     private Broadcast<Map<String, Object>> broadcast;
     private boolean inExecute = false;
 
+    // counter for Accumulator<ObjectWritable<HashMap>>
+    private AtomicLong accumulator4HashMapCounter = new AtomicLong(0);
+
     public SparkMemory(final VertexProgram<?> vertexProgram, final Set<MapReduce> mapReducers, final JavaSparkContext sparkContext) {
         if (null != vertexProgram) {
             for (final MemoryComputeKey key : vertexProgram.getMemoryComputeKeys()) {
@@ -67,6 +70,13 @@ public final class SparkMemory implements Memory.Admin, Serializable {
                     sparkContext.accumulator(ObjectWritable.empty(), memoryComputeKey.getKey(), new MemoryAccumulator<>(memoryComputeKey)));
         }
         this.broadcast = sparkContext.broadcast(Collections.emptyMap());
+        String tname = Thread.currentThread().getName();
+        System.out.println("[" + tname + "] SparkMemory(" +
+                this.hashCode() + " was created");
+    }
+
+    public long getAccumulator4HashMapCounter() {
+        return accumulator4HashMapCounter.get();
     }
 
     @Override
@@ -124,10 +134,20 @@ public final class SparkMemory implements Memory.Admin, Serializable {
     @Override
     public void add(final String key, final Object value) {
         checkKeyValue(key, value);
-        if (this.inExecute)
+        if (this.inExecute) {
             this.sparkMemory.get(key).add(new ObjectWritable<>(value));
-        else
+            if (value instanceof HashMap) {
+                accumulator4HashMapCounter.incrementAndGet();
+                if (accumulator4HashMapCounter.get() % 50 == 0) {
+                    String tname = Thread.currentThread().getName();
+                    System.out.println("[" + tname + "] SparkMemory(" +
+                            this.hashCode() + ") added HashMap: " +
+                            accumulator4HashMapCounter.get());
+                }
+            }
+        } else {
             throw Memory.Exceptions.memoryAddOnlyDuringVertexProgramExecute(key);
+        }
     }
 
     @Override
