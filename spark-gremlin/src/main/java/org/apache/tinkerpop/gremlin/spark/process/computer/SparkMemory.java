@@ -52,6 +52,11 @@ public final class SparkMemory implements Memory.Admin, Serializable {
     private Broadcast<Map<String, Object>> broadcast;
     private boolean inExecute = false;
 
+    // counter for Accumulator<ObjectWritable<HashMap>>
+    private AtomicLong accumulator4HashMapCounter = new AtomicLong(0);
+
+    private AtomicLong smallHashMapCounter = new AtomicLong(0);
+
     public SparkMemory(final VertexProgram<?> vertexProgram, final Set<MapReduce> mapReducers, final JavaSparkContext sparkContext) {
         if (null != vertexProgram) {
             for (final MemoryComputeKey key : vertexProgram.getMemoryComputeKeys()) {
@@ -67,6 +72,10 @@ public final class SparkMemory implements Memory.Admin, Serializable {
                     sparkContext.accumulator(ObjectWritable.empty(), memoryComputeKey.getKey(), new MemoryAccumulator<>(memoryComputeKey)));
         }
         this.broadcast = sparkContext.broadcast(Collections.emptyMap());
+    }
+
+    public long getAccumulator4HashMapCounter() {
+        return accumulator4HashMapCounter.get();
     }
 
     @Override
@@ -124,10 +133,26 @@ public final class SparkMemory implements Memory.Admin, Serializable {
     @Override
     public void add(final String key, final Object value) {
         checkKeyValue(key, value);
-        if (this.inExecute)
+        if (this.inExecute) {
             this.sparkMemory.get(key).add(new ObjectWritable<>(value));
-        else
+            // for trouble-shooting the memory issue caused by group().by()
+            if (value instanceof HashMap) {
+                HashMap hashMap = (HashMap)value;
+                if (hashMap.size() < 4) {
+                    smallHashMapCounter.incrementAndGet();
+                }
+                accumulator4HashMapCounter.incrementAndGet();
+                if (accumulator4HashMapCounter.get() % 100 == 0) {
+                    String tname = Thread.currentThread().getName();
+                    System.out.println("[" + tname + "] SparkMemory(" +
+                            this.hashCode() + ") added HashMap: " +
+                            accumulator4HashMapCounter.get() + " smallHashMap: " +
+                            smallHashMapCounter.get());
+                }
+            }
+        } else {
             throw Memory.Exceptions.memoryAddOnlyDuringVertexProgramExecute(key);
+        }
     }
 
     @Override

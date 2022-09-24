@@ -35,7 +35,8 @@ public final class HashMapSupplier<K, V> implements Supplier<Map<K, V>>, Seriali
 
     @Override
     public HashMap<K, V> get() {
-        return new HashMap<>();
+        // small capacity to avoid only putting 1~2 values but still consume 16 values
+        return new HashMap<>(2);
     }
 
     public static <K, V> HashMapSupplier<K, V> instance() {
