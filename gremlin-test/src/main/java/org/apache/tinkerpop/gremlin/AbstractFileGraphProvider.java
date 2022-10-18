@@ -64,6 +64,7 @@ public abstract class AbstractFileGraphProvider extends AbstractGraphProvider {
                     "grateful-dead-v3d0.json",
                     "tinkerpop-classic-typed-v2d0.json",
                     "tinkerpop-classic-v3d0.json",
+                    "tinkerpop-classic-byteid-v3d0.json", // replace g:Int32 with gx:Byte
                     "tinkerpop-crew-typed-v2d0.json",
                     "tinkerpop-crew-v3d0.json",
                     "tinkerpop-sink-v3d0.json");

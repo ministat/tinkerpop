@@ -27,10 +27,8 @@ import org.apache.tinkerpop.gremlin.hadoop.Constants;
 import org.apache.tinkerpop.gremlin.hadoop.structure.io.VertexWritable;
 import org.apache.tinkerpop.gremlin.hadoop.structure.util.ConfUtil;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONMapper;
-import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONReader;
-import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONVersion;
-import org.apache.tinkerpop.gremlin.structure.io.graphson.TypeInfo;
+import org.apache.tinkerpop.gremlin.structure.io.Mapper;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.*;
 import org.apache.tinkerpop.gremlin.structure.io.util.IoRegistryHelper;
 import org.apache.tinkerpop.gremlin.structure.util.Attachable;
 
@@ -56,11 +54,33 @@ public final class GraphSONRecordReader extends RecordReader<NullWritable, Verte
     public void initialize(final InputSplit genericSplit, final TaskAttemptContext context) throws IOException {
         this.lineRecordReader.initialize(genericSplit, context);
         this.hasEdges = context.getConfiguration().getBoolean(Constants.GREMLIN_HADOOP_GRAPH_READER_HAS_EDGES, true);
-        this.graphsonReader = GraphSONReader.build().mapper(
-                GraphSONMapper.build().
-                        version(GraphSONVersion.valueOf(context.getConfiguration().get(Constants.GREMLIN_HADOOP_GRAPHSON_VERSION, "V3_0"))).
-                        typeInfo(TypeInfo.PARTIAL_TYPES).
-                        addRegistries(IoRegistryHelper.createRegistries(ConfUtil.makeApacheConfiguration(context.getConfiguration()))).create()).create();
+        GraphSONVersion graphSONVersion =
+                GraphSONVersion.valueOf(context.getConfiguration().get(Constants.GREMLIN_HADOOP_GRAPHSON_VERSION, "V3_0"));
+
+        Mapper mapper = null;
+        if (graphSONVersion == GraphSONVersion.V2_0) {
+            mapper = GraphSONMapper.build().
+                    version(graphSONVersion).
+                    typeInfo(TypeInfo.PARTIAL_TYPES).
+                    addCustomModule(GraphSONXModuleV2d0.build().create(false)).
+                    addRegistries(IoRegistryHelper.createRegistries(
+                            ConfUtil.makeApacheConfiguration(context.getConfiguration()))).create();
+        } else if (graphSONVersion == GraphSONVersion.V3_0) {
+            mapper = GraphSONMapper.build().
+                    version(graphSONVersion).
+                    typeInfo(TypeInfo.PARTIAL_TYPES).
+                    addCustomModule(GraphSONXModuleV3d0.build().create(false)).
+                    addRegistries(IoRegistryHelper.createRegistries(
+                            ConfUtil.makeApacheConfiguration(context.getConfiguration()))).create();
+        } else {
+            mapper = GraphSONMapper.build().
+                    version(graphSONVersion).
+                    typeInfo(TypeInfo.PARTIAL_TYPES).
+                    addRegistries(IoRegistryHelper.createRegistries(
+                            ConfUtil.makeApacheConfiguration(context.getConfiguration()))).create();
+        }
+
+        this.graphsonReader = GraphSONReader.build().mapper(mapper).create();
     }
 
     @Override

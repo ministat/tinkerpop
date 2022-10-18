@@ -91,7 +91,7 @@ public abstract class RecordReaderWriterTest {
         return configuration;
     }
 
-    private static List<FileSplit> generateFileSplits(final File file, final int numberOfSplits) {
+    protected static List<FileSplit> generateFileSplits(final File file, final int numberOfSplits) {
         final long fileSize = file.length();
         final long splitLength = (long) ((double) fileSize / (double) numberOfSplits);
         final List<FileSplit> splits = new ArrayList<>();
@@ -101,7 +101,7 @@ public abstract class RecordReaderWriterTest {
         return splits;
     }
 
-    private static void validateFileSplits(final List<FileSplit> fileSplits, final Configuration configuration,
+    protected void validateFileSplits(final List<FileSplit> fileSplits, final Configuration configuration,
                                            final Class<? extends InputFormat<NullWritable, VertexWritable>> inputFormatClass,
                                            final Optional<Class<? extends OutputFormat<NullWritable, VertexWritable>>> outFormatClass) throws Exception {
 
@@ -133,7 +133,7 @@ public abstract class RecordReaderWriterTest {
                 inEdgeCount = inEdgeCount + (int) IteratorUtils.count(vertexWritable.get().edges(Direction.IN));
                 //
                 final Vertex vertex = vertexWritable.get();
-                assertEquals(Integer.class, vertex.id().getClass());
+                assertTrue(vertex.id().getClass().equals(Integer.class) || vertex.id().getClass().equals(Byte.class));
                 if (vertex.value("name").equals("SUGAR MAGNOLIA")) {
                     foundKeyValue = true;
                     assertEquals(92, IteratorUtils.count(vertex.edges(Direction.OUT)));
